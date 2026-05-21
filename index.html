@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>라라스윗 재무팀 개발 라이브러리</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #f7f7f5;
+  --card: #ffffff;
+  --border: #e5e5e5;
+  --text: #1a1a1a;
+  --muted: #888;
+  --green: #2d6a4f;
+  --green-dark: #1e4d38;
+  --더존: #3d5a3e;
+  --기타: #7b6b52;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── HEADER ───────────────────────────────────── */
+.header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 42px; height: 42px;
+  background: var(--green);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.header-title h1 { font-size: 19px; font-weight: 700; }
+.header-title p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.count-badge {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  background: white;
+}
+.count-badge b { font-weight: 700; }
+.add-btn {
+  width: 36px; height: 36px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  transition: background .15s, transform .1s;
+}
+.add-btn:hover { background: var(--green-dark); transform: scale(1.08); }
+
+/* ── FILTERS ──────────────────────────────────── */
+.filters-wrap {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.search-input {
+  flex: 1;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.search-input:focus { border-color: var(--green); }
+.filter-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.filter-select {
+  padding: 7px 28px 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;
+  -webkit-appearance: none; appearance: none;
+  cursor: pointer; outline: none;
+  transition: border-color .15s;
+}
+.filter-select:focus { border-color: var(--green); }
+.reset-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.reset-btn:hover { background: #f0f0f0; }
+
+/* ── GRID ─────────────────────────────────────── */
+.main { padding: 24px 32px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.empty-state {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 2;
+}
+
+/* ── CARD ─────────────────────────────────────── */
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition: box-shadow .2s, transform .15s;
+  cursor: grab;
+  user-select: none;
+}
+.card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.13); }
+.card.dragging { opacity: .45; transform: scale(.97); cursor: grabbing; }
+.card.drag-over { box-shadow: 0 0 0 2.5px var(--green); }
+
+.card-thumb {
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-thumb-text {
+  font-size: 26px;
+  font-weight: 800;
+  color: rgba(255,255,255,.55);
+  letter-spacing: -1px;
+}
+
+.card-body { padding: 14px 16px 16px; }
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+.cat-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+.status-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.s-운영중 { background: #e8f5e9; color: #2e7d32; }
+.s-개발중 { background: #fff8e1; color: #e65100; }
+.s-중단   { background: #f5f5f5; color: #757575; }
+
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+.card-desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.55;
+  margin-bottom: 12px;
+  min-height: 40px;
+}
+.card-desc.empty { color: #ccc; font-style: italic; }
+
+.card-meta {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.card-meta a { color: var(--green); text-decoration: none; word-break: break-all; }
+.card-meta a:hover { text-decoration: underline; }
+.meta-row { display: flex; gap: 6px; align-items: baseline; }
+.meta-lbl { min-width: 38px; color: #bbb; font-size: 11px; }
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #f2f2f2;
+  padding-top: 11px;
+}
+.user-info { display: flex; align-items: center; gap: 7px; }
+.avatar {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: white;
+  flex-shrink: 0;
+}
+.user-text { font-size: 12px; color: var(--muted); }
+.card-btns { display: flex; gap: 6px; }
+.btn-del {
+  padding: 5px 12px;
+  background: #d32f2f;
+  color: white;
+  border: none; border-radius: 6px;
+  font-size: 13px; font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-del:hover { background: #b71c1c; }
+.btn-open {
+  padding: 5px 12px;
+  background: var(--green);
+  color: white;
+  border: none; border-radius: 6px;
+  font-size: 13px; font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-open:hover:not(:disabled) { background: var(--green-dark); }
+.btn-open:disabled { background: #ccc; cursor: not-allowed; }
+
+/* ── MODAL ────────────────────────────────────── */
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.48);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.on { display: flex; }
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: pop .15s ease;
+}
+@keyframes pop {
+  from { transform: scale(.95); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.fg { margin-bottom: 15px; }
+.fg label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #444; }
+.fg input, .fg select, .fg textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px; font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--green); }
+.fg textarea { resize: vertical; min-height: 72px; }
+.fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.btn-cancel {
+  padding: 9px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  font-size: 14px; font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-cancel:hover { background: #f5f5f5; }
+.btn-save {
+  padding: 9px 20px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px; font-family: inherit; font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-save:hover { background: var(--green-dark); }
+
+/* confirm */
+.confirm-box {
+  background: white;
+  border-radius: 12px;
+  padding: 28px 24px;
+  width: 300px;
+  text-align: center;
+  animation: pop .15s ease;
+}
+.confirm-box p { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+.confirm-box .btn-del { padding: 9px 20px; font-size: 14px; }
+.confirm-box .btn-cancel { padding: 9px 20px; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
+
+@media (max-width: 600px) {
+  .header, .filters-wrap, .main { padding-left: 16px; padding-right: 16px; }
+  .filters-wrap { flex-wrap: wrap; }
+  .search-input { min-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">💼</div>
+    <div class="header-title">
+      <h1>라라스윗 재무팀 개발 라이브러리</h1>
+      <p id="subtitle">0개 프로젝트 · 드래그로 순서 변경</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="count-badge">등록 <b id="total-cnt">0</b></div>
+    <div class="count-badge">영역 <b>2</b></div>
+    <button class="add-btn" id="open-add-btn" title="프로젝트 등록">+</button>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters-wrap">
+  <input class="search-input" id="search" type="text" placeholder="프로젝트 이름, 개발자, 설명">
+  <span class="filter-label">업무영역</span>
+  <select class="filter-select" id="f-area">
+    <option value="">전체</option>
+    <option value="더존">더존</option>
+    <option value="기타">기타</option>
+  </select>
+  <span class="filter-label">상태</span>
+  <select class="filter-select" id="f-status">
+    <option value="">전체</option>
+    <option value="운영중">운영중</option>
+    <option value="개발중">개발중</option>
+    <option value="중단">중단</option>
+  </select>
+  <button class="reset-btn" id="reset-btn">초기화</button>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="add-overlay">
+  <div class="modal">
+    <h2 id="modal-title">프로젝트 등록</h2>
+    <div class="fg">
+      <label>프로젝트 이름 *</label>
+      <input type="text" id="m-name" placeholder="예: 전자결재 자동승인">
+    </div>
+    <div class="fg">
+      <label>설명</label>
+      <textarea id="m-desc" placeholder="어떤 자동화인지 간단히 설명해주세요"></textarea>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>업무영역 *</label>
+        <select id="m-area">
+          <option value="더존">더존</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>상태</label>
+        <select id="m-status">
+          <option value="운영중">운영중</option>
+          <option value="개발중">개발중</option>
+          <option value="중단">중단</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>개발자</label>
+        <input type="text" id="m-dev" placeholder="예: 홍길동">
+      </div>
+      <div class="fg">
+        <label>사용자 수</label>
+        <input type="number" id="m-users" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="fg">
+      <label>링크 (URL)</label>
+      <input type="text" id="m-link" placeholder="https://...">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="modal-cancel-btn">취소</button>
+      <button class="btn-save" id="modal-save-btn">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <p id="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" id="confirm-cancel-btn">취소</button>
+      <button class="btn-del" id="confirm-ok-btn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'lalasweet-finance-lib-v1';
+
+const CAT_COLOR = { '더존': '#3d5a3e', '기타': '#7b6b52' };
+const AVT_COLORS = ['#5c6bc0','#26a69a','#ef5350','#ab47bc','#42a5f5','#66bb6a','#ffa726','#ec407a','#8d6e63'];
+
+function avatarColor(name) {
+  if (!name) return '#aaa';
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return AVT_COLORS[Math.abs(h) % AVT_COLORS.length];
+}
+
+function initials(name) {
+  if (!name) return '?';
+  const p = name.trim().split(/\s+/);
+  return p.length >= 2 ? (p[0][0] + p[1][0]) : name.slice(0, 2);
+}
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const DEFAULTS = [
+  { id:1, name:'전자결재 자동승인', desc:'더존 전자결재 지출결의서를 자동으로 일괄 승인합니다', area:'더존', status:'운영중', dev:'조은이', users:1, link:'' },
+  { id:2, name:'서류 스캔 자동화',  desc:'전자결재 서류를 자동 스캔하고 Google Sheets에 결과를 기록합니다', area:'더존', status:'운영중', dev:'조은이', users:1, link:'' },
+  { id:3, name:'미수금 발송 자동화', desc:'미수금 내역을 자동으로 정리해 이메일로 발송합니다', area:'더존', status:'운영중', dev:'조은이', users:1, link:'' },
+];
+
+let projects = [];
+let editingId = null;
+let dragSrcIdx = null;
+
+/* ── DATA ─────────────────────────────────────── */
+function load() {
+  try { projects = JSON.parse(localStorage.getItem(KEY)) || null; } catch { projects = null; }
+  if (!projects) { projects = DEFAULTS.map(p => ({...p})); persist(); }
+}
+function persist() { localStorage.setItem(KEY, JSON.stringify(projects)); }
+function nextId() { return projects.length ? Math.max(...projects.map(p=>p.id)) + 1 : 1; }
+
+/* ── RENDER ───────────────────────────────────── */
+function filtered() {
+  const q    = document.getElementById('search').value.toLowerCase();
+  const area = document.getElementById('f-area').value;
+  const stat = document.getElementById('f-status').value;
+  return projects.filter(p =>
+    (!area || p.area === area) &&
+    (!stat || p.status === stat) &&
+    (!q    || `${p.name} ${p.dev} ${p.desc}`.toLowerCase().includes(q))
+  );
+}
+
+function render() {
+  const list  = filtered();
+  const grid  = document.getElementById('grid');
+  const total = projects.length;
+
+  document.getElementById('total-cnt').textContent = total;
+  document.getElementById('subtitle').textContent  = `${total}개 프로젝트 · 드래그로 순서 변경`;
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state">등록된 프로젝트가 없어요.<br>+ 버튼으로 첫 프로젝트를 추가해 보세요!</div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const cc  = CAT_COLOR[p.area] || '#555';
+    const ac  = avatarColor(p.dev);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.draggable = true;
+    card.dataset.id = p.id;
+
+    card.innerHTML = `
+      <div class="card-thumb" style="background:linear-gradient(135deg,${cc}cc,${cc}77)">
+        <span class="card-thumb-text">${esc(p.area)}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="cat-badge" style="background:${cc}">${esc(p.area)}</span>
+          <span class="status-badge s-${esc(p.status)}">${esc(p.status)}</span>
+        </div>
+        <div class="card-name">${esc(p.name)}</div>
+        <div class="card-desc${p.desc ? '' : ' empty'}">${p.desc ? esc(p.desc) : '설명 없음'}</div>
+        <div class="card-meta">
+          ${p.link ? `<div class="meta-row"><span class="meta-lbl">링크</span><a href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">${esc(p.link)}</a></div>` : ''}
+          ${p.dev  ? `<div class="meta-row"><span class="meta-lbl">개발자</span>${esc(p.dev)}</div>` : ''}
+          <div class="meta-row"><span class="meta-lbl">영역</span>${esc(p.area)}</div>
+        </div>
+        <div class="card-footer">
+          <div class="user-info">
+            <div class="avatar" style="background:${ac}">${esc(initials(p.dev))}</div>
+            <span class="user-text">${p.users || 0}개 사용자</span>
+          </div>
+          <div class="card-btns">
+            <button class="btn-del js-del">삭제</button>
+            <button class="btn-open js-open" ${p.link ? '' : 'disabled'}>열기</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    /* 버튼 이벤트 */
+    card.querySelector('.js-del').addEventListener('click', e => { e.stopPropagation(); askDelete(p.id); });
+    const openBtn = card.querySelector('.js-open');
+    if (p.link) openBtn.addEventListener('click', () => window.open(p.link, '_blank', 'noopener,noreferrer'));
+
+    /* 드래그 */
+    card.addEventListener('dragstart', e => {
+      dragSrcIdx = projects.findIndex(x => x.id === p.id);
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      grid.querySelectorAll('.card').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const destIdx = projects.findIndex(x => x.id === p.id);
+      if (dragSrcIdx !== null && dragSrcIdx !== destIdx) {
+        const [moved] = projects.splice(dragSrcIdx, 1);
+        projects.splice(destIdx, 0, moved);
+        persist(); render();
+      }
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+/* ── ADD / EDIT MODAL ─────────────────────────── */
+function openModal(id) {
+  editingId = id ?? null;
+  const isEdit = !!id;
+  document.getElementById('modal-title').textContent = isEdit ? '프로젝트 수정' : '프로젝트 등록';
+  document.getElementById('modal-save-btn').textContent = isEdit ? '저장' : '등록';
+
+  const p = isEdit ? projects.find(x => x.id === id) : null;
+  document.getElementById('m-name').value   = p?.name   ?? '';
+  document.getElementById('m-desc').value   = p?.desc   ?? '';
+  document.getElementById('m-area').value   = p?.area   ?? '더존';
+  document.getElementById('m-status').value = p?.status ?? '운영중';
+  document.getElementById('m-dev').value    = p?.dev    ?? '';
+  document.getElementById('m-users').value  = p?.users  ?? 1;
+  document.getElementById('m-link').value   = p?.link   ?? '';
+
+  document.getElementById('add-overlay').classList.add('on');
+  setTimeout(() => document.getElementById('m-name').focus(), 60);
+}
+function closeModal() {
+  document.getElementById('add-overlay').classList.remove('on');
+  editingId = null;
+}
+function saveModal() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { document.getElementById('m-name').focus(); return; }
+  const data = {
+    name,
+    desc:   document.getElementById('m-desc').value.trim(),
+    area:   document.getElementById('m-area').value,
+    status: document.getElementById('m-status').value,
+    dev:    document.getElementById('m-dev').value.trim(),
+    users:  parseInt(document.getElementById('m-users').value) || 0,
+    link:   document.getElementById('m-link').value.trim(),
+  };
+  if (editingId) {
+    const idx = projects.findIndex(p => p.id === editingId);
+    projects[idx] = { ...projects[idx], ...data };
+  } else {
+    projects.push({ id: nextId(), ...data });
+  }
+  persist(); render(); closeModal();
+}
+
+/* ── DELETE CONFIRM ───────────────────────────── */
+function askDelete(id) {
+  const p = projects.find(x => x.id === id);
+  document.getElementById('confirm-msg').textContent = `"${p.name}"을(를) 삭제할까요?`;
+  document.getElementById('confirm-ok-btn').onclick = () => { doDelete(id); closeConfirm(); };
+  document.getElementById('confirm-overlay').classList.add('on');
+}
+function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('on'); }
+function doDelete(id) { projects = projects.filter(p => p.id !== id); persist(); render(); }
+
+/* ── EVENTS ───────────────────────────────────── */
+document.getElementById('open-add-btn').addEventListener('click', () => openModal());
+document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+document.getElementById('modal-save-btn').addEventListener('click', saveModal);
+document.getElementById('confirm-cancel-btn').addEventListener('click', closeConfirm);
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('search').value = '';
+  document.getElementById('f-area').value = '';
+  document.getElementById('f-status').value = '';
+  render();
+});
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('f-area').addEventListener('change', render);
+document.getElementById('f-status').addEventListener('change', render);
+
+document.getElementById('add-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('add-overlay')) closeModal();
+});
+document.getElementById('confirm-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+  if (e.key === 'Enter' && document.getElementById('add-overlay').classList.contains('on')) {
+    if (!['TEXTAREA','SELECT'].includes(document.activeElement.tagName)) saveModal();
+  }
+});
+
+/* ── INIT ─────────────────────────────────────── */
+load();
+render();
+</script>
+</body>
+</html>
