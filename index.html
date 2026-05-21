@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>라라스윗 재무팀 개발 라이브러리</title>
+<link id="favicon" rel="icon" href=""  type="image/png">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -688,10 +689,22 @@ document.addEventListener('keydown', e => {
 });
 
 /* ── LOGO ─────────────────────────────────────── */
+function setFavicon(src) {
+  document.querySelectorAll('link[rel="icon"]').forEach(el => el.remove());
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/png';
+  link.href = src;
+  document.head.appendChild(link);
+}
+
 function loadLogo() {
   const saved = localStorage.getItem('lalasweet-logo');
   const logo = document.getElementById('logo');
-  if (saved) logo.innerHTML = `<img src="${saved}" alt="logo">`;
+  if (saved) {
+    logo.innerHTML = `<img src="${saved}" alt="logo">`;
+    setFavicon(saved);
+  }
 }
 
 document.getElementById('logo').addEventListener('click', () => {
@@ -706,6 +719,7 @@ document.getElementById('logo-input').addEventListener('change', function() {
     const b64 = e.target.result;
     localStorage.setItem('lalasweet-logo', b64);
     document.getElementById('logo').innerHTML = `<img src="${b64}" alt="logo">`;
+    setFavicon(b64);
   };
   reader.readAsDataURL(file);
   this.value = '';
