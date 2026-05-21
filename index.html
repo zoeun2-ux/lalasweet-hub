@@ -690,12 +690,21 @@ document.addEventListener('keydown', e => {
 
 /* ── LOGO ─────────────────────────────────────── */
 function setFavicon(src) {
-  document.querySelectorAll('link[rel="icon"]').forEach(el => el.remove());
-  const link = document.createElement('link');
-  link.rel = 'icon';
-  link.type = 'image/png';
-  link.href = src;
-  document.head.appendChild(link);
+  const img = new Image();
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; canvas.height = 32;
+    canvas.getContext('2d').drawImage(img, 0, 0, 32, 32);
+    const dataUrl = canvas.toDataURL('image/png');
+    document.querySelectorAll('link[rel*="icon"]').forEach(el => el.remove());
+    ['icon','shortcut icon'].forEach(rel => {
+      const link = document.createElement('link');
+      link.rel = rel; link.type = 'image/png';
+      link.href = dataUrl + '?t=' + Date.now();
+      document.head.appendChild(link);
+    });
+  };
+  img.src = src;
 }
 
 function loadLogo() {
