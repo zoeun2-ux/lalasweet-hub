@@ -240,6 +240,16 @@ body {
   transition: background .15s;
 }
 .btn-del:hover { background: #b71c1c; }
+.btn-edit {
+  padding: 5px 12px;
+  background: #f0f0f0;
+  color: #333;
+  border: none; border-radius: 6px;
+  font-size: 13px; font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-edit:hover { background: #e0e0e0; }
 .btn-open {
   padding: 5px 12px;
   background: var(--green);
@@ -538,6 +548,7 @@ function render() {
           </div>
           <div class="card-btns">
             <button class="btn-del js-del">삭제</button>
+            <button class="btn-edit js-edit">수정</button>
             <button class="btn-open js-open" ${p.link ? '' : 'disabled'}>열기</button>
           </div>
         </div>
@@ -546,6 +557,7 @@ function render() {
 
     /* 버튼 이벤트 */
     card.querySelector('.js-del').addEventListener('click', e => { e.stopPropagation(); askDelete(p.id); });
+    card.querySelector('.js-edit').addEventListener('click', e => { e.stopPropagation(); openModal(p.id); });
     const openBtn = card.querySelector('.js-open');
     if (p.link) openBtn.addEventListener('click', () => window.open(p.link, '_blank', 'noopener,noreferrer'));
 
