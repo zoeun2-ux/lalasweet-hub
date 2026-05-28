@@ -573,9 +573,11 @@ function render() {
       </div>
     `;
 
-    /* 카드 클릭 → 수정 */
+    /* 카드 클릭 → 링크 있으면 열기, 없으면 수정 */
     card.addEventListener('click', e => {
-      if (!e.target.closest('button')) openModal(p.id);
+      if (e.target.closest('button')) return;
+      if (p.link) window.open(p.link, '_blank', 'noopener,noreferrer');
+      else openModal(p.id);
     });
 
     /* 버튼 이벤트 */

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>슬랙 DM 발송 | 재무팀</title>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --green:#2d6a4f; --green-dark:#1e4d38;
+  --bg:#f7f7f5; --border:#e5e5e5; --muted:#888;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif; background:var(--bg); color:#1a1a1a; min-height:100vh; }
+
+/* HEADER */
+.header { background:white; border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:100; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.back-btn { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:8px; text-decoration:none; color:#555; font-size:13px; transition:background .15s; }
+.back-btn:hover { background:#f0f0f0; }
+.header h1 { font-size:18px; font-weight:700; }
+
+/* LAYOUT */
+.main { max-width:760px; margin:0 auto; padding:28px 20px 60px; display:flex; flex-direction:column; gap:20px; }
+
+/* CARD */
+.card { background:white; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
+.card-head { padding:16px 20px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; gap:10px; }
+.step-num { width:26px; height:26px; background:var(--green); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+.step-num.done { background:#66bb6a; }
+.card-head h2 { font-size:15px; font-weight:700; }
+.card-body { padding:20px; }
+
+/* FORM */
+.fg { margin-bottom:14px; }
+.fg:last-child { margin-bottom:0; }
+.fg label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:#444; }
+.fg input, .fg select, .fg textarea {
+  width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px;
+  font-size:14px; font-family:inherit; outline:none; transition:border-color .15s;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--green); }
+.fg textarea { resize:vertical; min-height:180px; line-height:1.6; }
+.fg .hint { font-size:12px; color:var(--muted); margin-top:4px; }
+.pw-wrap { position:relative; }
+.pw-wrap input { padding-right:40px; }
+.pw-toggle { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; padding:4px; }
+
+/* UPLOAD */
+.upload-zone {
+  border:2px dashed var(--border); border-radius:10px; padding:36px;
+  text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+}
+.upload-zone:hover, .upload-zone.drag { border-color:var(--green); background:#f0f7f4; }
+.upload-zone .icon { font-size:36px; margin-bottom:10px; }
+.upload-zone p { font-size:14px; color:#555; }
+.upload-zone small { font-size:12px; color:var(--muted); margin-top:4px; display:block; }
+.file-done { display:flex; align-items:center; gap:10px; padding:12px 16px; background:#f0f7f4; border-radius:8px; font-size:14px; }
+.file-done .icon { font-size:22px; }
+
+/* TABLE */
+.table-wrap { overflow-x:auto; border-radius:8px; border:1px solid var(--border); }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:#f7f7f5; padding:8px 12px; text-align:left; font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:8px 12px; border-bottom:1px solid #f5f5f5; }
+tr:last-child td { border-bottom:none; }
+.col-map { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+
+/* BUTTONS */
+.btn { padding:10px 20px; border:none; border-radius:8px; font-size:14px; font-family:inherit; font-weight:600; cursor:pointer; transition:background .15s; }
+.btn-primary { background:var(--green); color:white; }
+.btn-primary:hover:not(:disabled) { background:var(--green-dark); }
+.btn-primary:disabled { background:#ccc; cursor:not-allowed; }
+.btn-secondary { background:#f0f0f0; color:#333; }
+.btn-secondary:hover { background:#e0e0e0; }
+.btn-danger { background:#d32f2f; color:white; }
+.btn-danger:hover { background:#b71c1c; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* PROGRESS */
+.progress-wrap { margin-bottom:16px; }
+.progress-bar-bg { height:8px; background:#f0f0f0; border-radius:4px; overflow:hidden; margin-top:6px; }
+.progress-bar { height:100%; background:var(--green); border-radius:4px; transition:width .3s; }
+.progress-label { font-size:13px; color:var(--muted); display:flex; justify-content:space-between; }
+
+/* LOG */
+.log-list { display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; }
+.log-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; font-size:13px; }
+.log-item.success { background:#e8f5e9; }
+.log-item.fail    { background:#fde8e8; }
+.log-item.pending { background:#f5f5f5; color:var(--muted); }
+.log-icon { font-size:16px; flex-shrink:0; }
+.log-name { font-weight:600; min-width:80px; }
+.log-msg  { color:var(--muted); font-size:12px; }
+
+/* RESULT */
+.result-box { text-align:center; padding:28px; }
+.result-box .big { font-size:48px; margin-bottom:12px; }
+.result-box h3 { font-size:18px; font-weight:700; margin-bottom:8px; }
+.result-counts { display:flex; gap:16px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+.result-count { padding:10px 20px; border-radius:10px; font-size:14px; font-weight:600; }
+.rc-success { background:#e8f5e9; color:#2e7d32; }
+.rc-fail    { background:#fde8e8; color:#c62828; }
+.rc-skip    { background:#f5f5f5; color:#757575; }
+
+/* UTIL */
+.hidden { display:none !important; }
+.tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.tag-green { background:#e8f5e9; color:#2e7d32; }
+.tag-red   { background:#fde8e8; color:#c62828; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="/" class="back-btn">← 라이브러리</a>
+  <h1>📨 슬랙 미수금 DM 발송</h1>
+</header>
+
+<main class="main">
+
+  <!-- STEP 1: 봇 토큰 -->
+  <div class="card" id="sec-token">
+    <div class="card-head">
+      <div class="step-num" id="num1">1</div>
+      <h2>슬랙 봇 토큰</h2>
+    </div>
+    <div class="card-body">
+      <div class="fg">
+        <label>Bot Token (xoxb-...)</label>
+        <div class="pw-wrap">
+          <input type="password" id="token-input" placeholder="xoxb-00000000000-..." autocomplete="off">
+          <button class="pw-toggle" id="token-toggle" onclick="toggleToken()">👁</button>
+        </div>
+        <p class="hint">한 번 입력하면 이 기기에 저장돼요. 필요한 권한: users:read.email, chat:write, im:write</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveToken()">저장하고 다음 →</button>
+        <button class="btn btn-secondary hidden" id="token-change-btn" onclick="changeToken()">토큰 변경</button>
+      </div>
+      <p id="token-status" style="margin-top:10px;font-size:13px;"></p>
+    </div>
+  </div>
+
+  <!-- STEP 2: 엑셀 업로드 -->
+  <div class="card hidden" id="sec-excel">
+    <div class="card-head">
+      <div class="step-num" id="num2">2</div>
+      <h2>엑셀 파일 업로드</h2>
+    </div>
+    <div class="card-body">
+      <div id="upload-zone" class="upload-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <div class="icon">📊</div>
+        <p>클릭하거나 파일을 여기에 끌어다 놓으세요</p>
+        <small>.xlsx / .xls / .csv 파일</small>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="onFileSelect(event)">
+      <div id="file-done" class="file-done hidden">
+        <span class="icon">✅</span>
+        <span id="file-name"></span>
+        <button class="btn btn-secondary" style="margin-left:auto;padding:5px 12px;font-size:12px" onclick="resetFile()">다시 선택</button>
+      </div>
+
+      <div id="col-section" class="hidden" style="margin-top:16px;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px;">컬럼 확인</p>
+        <div class="col-map">
+          <div class="fg" style="margin:0">
+            <label>이름 컬럼</label>
+            <select id="col-name"></select>
+          </div>
+          <div class="fg" style="margin:0">
+            <label>이메일 컬럼</label>
+            <select id="col-email"></select>
+          </div>
+          <div class="fg" style="margin:0">
+            <label>금액 컬럼</label>
+            <select id="col-amount"></select>
+          </div>
+        </div>
+        <div id="preview-table-wrap" class="table-wrap" style="margin-bottom:16px;"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="goToMessage()">다음 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: 메시지 -->
+  <div class="card hidden" id="sec-message">
+    <div class="card-head">
+      <div class="step-num" id="num3">3</div>
+      <h2>메시지 작성</h2>
+    </div>
+    <div class="card-body">
+      <div class="fg">
+        <label>발송일 기준</label>
+        <input type="text" id="msg-date" placeholder="예: 2025년 5월">
+      </div>
+      <div class="fg">
+        <label>메시지 템플릿</label>
+        <textarea id="msg-template"></textarea>
+        <p class="hint">사용 가능한 변수: <b>{이름}</b> · <b>{금액}</b> · <b>{날짜}</b></p>
+      </div>
+      <div class="fg">
+        <label>미리보기 (첫 번째 수신자)</label>
+        <div id="msg-preview" style="background:#f7f7f5;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;min-height:60px;"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goBack()">← 이전</button>
+        <button class="btn btn-primary" onclick="goToSend()">다음 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: 발송 -->
+  <div class="card hidden" id="sec-send">
+    <div class="card-head">
+      <div class="step-num" id="num4">4</div>
+      <h2>발송</h2>
+    </div>
+    <div class="card-body">
+      <div id="send-ready">
+        <div style="background:#f0f7f4;border-radius:10px;padding:16px;margin-bottom:16px;font-size:14px;line-height:1.7;">
+          <b>발송 전 확인</b><br>
+          수신자: <b id="confirm-count"></b>명 &nbsp;|&nbsp; 예상 소요시간: <b id="confirm-time"></b>초
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goBackToMsg()">← 이전</button>
+          <button class="btn btn-primary" id="send-btn" onclick="startSend()">🚀 발송 시작</button>
+        </div>
+      </div>
+
+      <div id="send-progress" class="hidden">
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="prog-label">준비 중...</span>
+            <span id="prog-pct">0%</span>
+          </div>
+          <div class="progress-bar-bg"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+        </div>
+        <div class="log-list" id="log-list"></div>
+      </div>
+
+      <div id="send-result" class="hidden">
+        <div class="result-box">
+          <div class="big" id="result-icon"></div>
+          <h3 id="result-title"></h3>
+          <div class="result-counts">
+            <div class="result-count rc-success">✅ 성공 <b id="r-success">0</b>건</div>
+            <div class="result-count rc-fail">❌ 실패 <b id="r-fail">0</b>건</div>
+            <div class="result-count rc-skip">⏭ 건너뜀 <b id="r-skip">0</b>건</div>
+          </div>
+        </div>
+        <div class="btn-row" style="justify-content:center;margin-top:8px;">
+          <button class="btn btn-secondary" onclick="resetAll()">처음으로</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const TOKEN_KEY   = 'lalasweet-slack-token';
+const MSG_KEY     = 'lalasweet-slack-msg';
+const DATE_KEY    = 'lalasweet-slack-date';
+
+let rows = [];       // parsed excel rows
+let colName = '';
+let colEmail = '';
+let colAmount = '';
+
+/* ── TOKEN ───────────────────────────────────── */
+function toggleToken() {
+  const inp = document.getElementById('token-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function saveToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t.startsWith('xoxb-')) {
+    setStatus('token-status', '❌ 올바른 Bot Token 형식이 아니에요 (xoxb-로 시작해야 해요)', 'red');
+    return;
+  }
+  localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('token-input').value = '●'.repeat(20);
+  document.getElementById('token-input').disabled = true;
+  document.getElementById('token-toggle').style.display = 'none';
+  document.querySelector('#sec-token .btn-primary').classList.add('hidden');
+  document.getElementById('token-change-btn').classList.remove('hidden');
+  setStatus('token-status', '✅ 저장됐어요!', 'green');
+  document.getElementById('num1').classList.add('done');
+  document.getElementById('sec-excel').classList.remove('hidden');
+}
+
+function changeToken() {
+  const inp = document.getElementById('token-input');
+  inp.disabled = false; inp.value = ''; inp.type = 'password';
+  document.getElementById('token-toggle').style.display = '';
+  document.querySelector('#sec-token .btn-primary').classList.remove('hidden');
+  document.getElementById('token-change-btn').classList.add('hidden');
+  setStatus('token-status', '', '');
+}
+
+function setStatus(id, msg, color) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.color = color === 'red' ? '#d32f2f' : color === 'green' ? '#2e7d32' : '#888';
+}
+
+/* ── EXCEL ────────────────────────────────────── */
+function onDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function onDragLeave()  { document.getElementById('upload-zone').classList.remove('drag'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function onFileSelect(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const wb = XLSX.read(e.target.result, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    if (!rows.length) { alert('파일에 데이터가 없어요.'); return; }
+
+    document.getElementById('upload-zone').classList.add('hidden');
+    const fd = document.getElementById('file-done');
+    fd.classList.remove('hidden');
+    document.getElementById('file-name').textContent = `${file.name}  (${rows.length}행)`;
+
+    const keys = Object.keys(rows[0]);
+    populateColSelects(keys);
+    renderPreviewTable();
+    document.getElementById('col-section').classList.remove('hidden');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetFile() {
+  rows = [];
+  document.getElementById('file-done').classList.add('hidden');
+  document.getElementById('upload-zone').classList.remove('hidden');
+  document.getElementById('col-section').classList.add('hidden');
+  document.getElementById('file-input').value = '';
+}
+
+function findCol(keys, ...candidates) {
+  return keys.find(k => candidates.some(c => k.replace(/\s/g,'').toLowerCase().includes(c))) || '';
+}
+
+function populateColSelects(keys) {
+  const guessName   = findCol(keys,'이름','name','담당자','직원','성명');
+  const guessEmail  = findCol(keys,'이메일','메일','email','mail');
+  const guessAmount = findCol(keys,'미수금','금액','잔액','미납','amount');
+
+  ['col-name','col-email','col-amount'].forEach((id, i) => {
+    const guess = [guessName, guessEmail, guessAmount][i];
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">(없음)</option>' + keys.map(k => `<option value="${esc(k)}"${k===guess?' selected':''}>${esc(k)}</option>`).join('');
+    sel.onchange = renderPreviewTable;
+  });
+
+  colName   = guessName;
+  colEmail  = guessEmail;
+  colAmount = guessAmount;
+}
+
+function renderPreviewTable() {
+  colName   = document.getElementById('col-name').value;
+  colEmail  = document.getElementById('col-email').value;
+  colAmount = document.getElementById('col-amount').value;
+
+  const preview = rows.slice(0, 5);
+  const cols = [colName, colEmail, colAmount].filter(Boolean);
+  const wrap = document.getElementById('preview-table-wrap');
+
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}<th>금액 유효</th></tr></thead>
+      <tbody>${preview.map(row => {
+        const amt = parseFloat(String(row[colAmount]||'').replace(/[^0-9.]/g,''));
+        return `<tr>${cols.map(c=>`<td>${esc(String(row[c]||''))}</td>`).join('')}
+          <td><span class="tag ${amt>0?'tag-green':'tag-red'}">${amt>0?'✓':'✗'}</span></td></tr>`;
+      }).join('')}</tbody>
+    </table>
+    <p style="font-size:12px;color:var(--muted);padding:8px 12px;">처음 5행 미리보기 (전체 ${rows.length}행)</p>
+  `;
+}
+
+/* ── MESSAGE ──────────────────────────────────── */
+const DEFAULT_MSG = `안녕하세요, *{이름}*님 👋
+
+*{날짜}* 기준 미수금 안내드립니다.
+
+> *미수금액: {금액}원*
+
+해당 금액은 법인카드 사용에 대한 알림입니다!
+
+입금 계좌 : 기업은행 185-155073-01-011
+
+확인 후 처리 부탁드립니다.
+문의사항이 있으시면 재무팀 조은이에게 DM 주시기 바랍니다! 🐣`;
+
+function goToMessage() {
+  if (!colName || !colAmount) { alert('이름과 금액 컬럼은 필수예요!'); return; }
+  document.getElementById('num2').classList.add('done');
+  document.getElementById('sec-message').classList.remove('hidden');
+
+  const savedMsg  = localStorage.getItem(MSG_KEY)  || DEFAULT_MSG;
+  const savedDate = localStorage.getItem(DATE_KEY) || new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long'});
+  document.getElementById('msg-template').value = savedMsg;
+  document.getElementById('msg-date').value = savedDate;
+
+  document.getElementById('msg-template').addEventListener('input', updatePreview);
+  document.getElementById('msg-date').addEventListener('input', updatePreview);
+  updatePreview();
+  document.getElementById('sec-message').scrollIntoView({behavior:'smooth'});
+}
+
+function updatePreview() {
+  const tpl  = document.getElementById('msg-template').value;
+  const date = document.getElementById('msg-date').value;
+  const sample = rows[0] || {};
+  const name   = String(sample[colName]  || '홍길동').trim();
+  const rawAmt = String(sample[colAmount]|| '150000').replace(/[^0-9.]/g,'');
+  const amt    = parseFloat(rawAmt)||0;
+  const rendered = tpl
+    .replace(/\{이름\}/g, name)
+    .replace(/\{금액\}/g, amt.toLocaleString('ko-KR'))
+    .replace(/\{날짜\}/g, date);
+  document.getElementById('msg-preview').textContent = rendered;
+}
+
+function goBack() {
+  document.getElementById('sec-message').classList.add('hidden');
+}
+
+/* ── SEND ─────────────────────────────────────── */
+function goToSend() {
+  localStorage.setItem(MSG_KEY,  document.getElementById('msg-template').value);
+  localStorage.setItem(DATE_KEY, document.getElementById('msg-date').value);
+
+  const validRows = rows.filter(r => {
+    const amt = parseFloat(String(r[colAmount]||'').replace(/[^0-9.]/g,''));
+    return String(r[colName]||'').trim() && amt > 0;
+  });
+  document.getElementById('confirm-count').textContent = validRows.length;
+  document.getElementById('confirm-time').textContent  = validRows.length * 1;
+
+  document.getElementById('num3').classList.add('done');
+  document.getElementById('sec-send').classList.remove('hidden');
+  document.getElementById('sec-send').scrollIntoView({behavior:'smooth'});
+}
+
+function goBackToMsg() {
+  document.getElementById('sec-send').classList.add('hidden');
+}
+
+async function startSend() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) { alert('봇 토큰이 없어요. 1단계에서 다시 입력해주세요.'); return; }
+
+  const tpl  = document.getElementById('msg-template').value;
+  const date = document.getElementById('msg-date').value;
+
+  document.getElementById('send-ready').classList.add('hidden');
+  document.getElementById('send-progress').classList.remove('hidden');
+
+  const validRows = rows.filter(r => {
+    const amt = parseFloat(String(r[colAmount]||'').replace(/[^0-9.]/g,''));
+    return String(r[colName]||'').trim() && amt > 0;
+  });
+  const skipped = rows.length - validRows.length;
+
+  let success=0, fail=0;
+  const logList = document.getElementById('log-list');
+  logList.innerHTML = '';
+
+  for (let i=0; i<validRows.length; i++) {
+    const row  = validRows[i];
+    const name = String(row[colName]||'').trim();
+    const email= colEmail ? String(row[colEmail]||'').trim() : '';
+    const rawAmt = String(row[colAmount]||'').replace(/[^0-9.]/g,'');
+    const amt  = parseFloat(rawAmt)||0;
+
+    // progress
+    const pct = Math.round((i/validRows.length)*100);
+    document.getElementById('prog-bar').style.width = pct+'%';
+    document.getElementById('prog-pct').textContent = pct+'%';
+    document.getElementById('prog-label').textContent = `${i+1}/${validRows.length} 발송 중...`;
+
+    // log item
+    const li = document.createElement('div');
+    li.className = 'log-item pending';
+    li.innerHTML = `<span class="log-icon">⏳</span><span class="log-name">${esc(name)}</span><span class="log-msg">발송 중...</span>`;
+    logList.appendChild(li);
+    logList.scrollTop = logList.scrollHeight;
+
+    const msg = tpl
+      .replace(/\{이름\}/g, name)
+      .replace(/\{금액\}/g, amt.toLocaleString('ko-KR'))
+      .replace(/\{날짜\}/g, date);
+
+    try {
+      // find user
+      let userId = null;
+      if (email) {
+        try {
+          const r = await slackAPI(token, 'users.lookupByEmail', { email });
+          userId = r.user?.id;
+        } catch {}
+      }
+      if (!userId) {
+        const r2 = await slackAPI(token, 'users.list', { limit: 200 });
+        const members = r2.members || [];
+        const found = members.find(u => !u.deleted && (
+          u.real_name===name || u.profile?.display_name===name ||
+          u.profile?.real_name===name || u.name===name
+        ));
+        userId = found?.id || null;
+      }
+      if (!userId) throw new Error('슬랙 사용자를 찾을 수 없음');
+
+      // open DM
+      const dmRes = await slackAPI(token, 'conversations.open', { users: userId });
+      const channelId = dmRes.channel.id;
+
+      // send
+      await slackAPI(token, 'chat.postMessage', { channel: channelId, text: msg, mrkdwn: true });
+
+      li.className = 'log-item success';
+      li.innerHTML = `<span class="log-icon">✅</span><span class="log-name">${esc(name)}</span><span class="log-msg">발송 완료</span>`;
+      success++;
+    } catch (err) {
+      li.className = 'log-item fail';
+      li.innerHTML = `<span class="log-icon">❌</span><span class="log-name">${esc(name)}</span><span class="log-msg">${esc(err.message)}</span>`;
+      fail++;
+    }
+
+    if (i < validRows.length - 1) await sleep(1000);
+  }
+
+  // done
+  document.getElementById('prog-bar').style.width = '100%';
+  document.getElementById('prog-pct').textContent = '100%';
+  document.getElementById('prog-label').textContent = '완료!';
+
+  document.getElementById('num4').classList.add('done');
+  document.getElementById('r-success').textContent = success;
+  document.getElementById('r-fail').textContent = fail;
+  document.getElementById('r-skip').textContent = skipped;
+  document.getElementById('result-icon').textContent = fail===0 ? '🎉' : '⚠️';
+  document.getElementById('result-title').textContent = fail===0 ? '모두 발송 완료!' : `${success}건 발송, ${fail}건 실패`;
+  document.getElementById('send-result').classList.remove('hidden');
+}
+
+async function slackAPI(token, method, body) {
+  const res = await fetch(`https://slack.com/api/${method}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json;charset=utf-8' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'API 오류');
+  return json;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function resetAll() {
+  rows = [];
+  document.getElementById('file-done').classList.add('hidden');
+  document.getElementById('upload-zone').classList.remove('hidden');
+  document.getElementById('col-section').classList.add('hidden');
+  document.getElementById('file-input').value = '';
+  document.getElementById('sec-message').classList.add('hidden');
+  document.getElementById('sec-send').classList.add('hidden');
+  document.getElementById('send-ready').classList.remove('hidden');
+  document.getElementById('send-progress').classList.add('hidden');
+  document.getElementById('send-result').classList.add('hidden');
+  document.getElementById('log-list').innerHTML = '';
+  ['num2','num3','num4'].forEach(id => document.getElementById(id).classList.remove('done'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function esc(s) {
+  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── INIT ─────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(TOKEN_KEY);
+  if (saved) {
+    document.getElementById('token-input').value = '●'.repeat(20);
+    document.getElementById('token-input').disabled = true;
+    document.getElementById('token-toggle').style.display = 'none';
+    document.querySelector('#sec-token .btn-primary').classList.add('hidden');
+    document.getElementById('token-change-btn').classList.remove('hidden');
+    setStatus('token-status','✅ 저장된 토큰이 있어요','green');
+    document.getElementById('num1').classList.add('done');
+    document.getElementById('sec-excel').classList.remove('hidden');
+  }
+});
+</script>
+</body>
+</html>
