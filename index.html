@@ -159,7 +159,7 @@ body {
   cursor: grab;
   user-select: none;
 }
-.card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.13); }
+.card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.13); cursor: pointer; }
 .card.dragging { opacity: .45; transform: scale(.97); cursor: grabbing; }
 .card.drag-over { box-shadow: 0 0 0 2.5px var(--green); }
 
@@ -572,6 +572,11 @@ function render() {
         </div>
       </div>
     `;
+
+    /* 카드 클릭 → 수정 */
+    card.addEventListener('click', e => {
+      if (!e.target.closest('button')) openModal(p.id);
+    });
 
     /* 버튼 이벤트 */
     card.querySelector('.js-del').addEventListener('click', e => { e.stopPropagation(); askDelete(p.id); });
